@@ -1,0 +1,42 @@
+ clients:
+  - url: http://loki:3100/loki/api/v1/push
+ 
+ scrape_configs:
+  - job_name: postgres
+    static_configs:
+      # - targets:
+      #   - localhost
+    - labels:
+        job: varlogs  
+        host: yourhost
+        __path__: /var/log/postgres.log
+    pipeline_stages:
+      # DROP STAGE 1
+      - match:
+          selector: '{host="yourhost"} |~ ".*instruction.*"'
+          action: drop
+          drop_counter_reason: promtail_noisy_error
+      # DROP STAGE 2
+      # - match:
+      #     selector: '{host="yourhost"} |~ ".*db= LOG:*"'
+      #     action: drop
+      #     drop_counter_reason: promtail_noisy_error
+      # ADD LABELS AND CHANGE TIMESTAMP
+      - match:
+          selector: '{host="yourhost"}'
+          stages:
+            - multiline:
+                firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}'
+            - regex:
+                expression: '(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) (?P<TZ>\w+) (?P<pid>\[.*]) (?P<level>\w+):  (?P<content>.*)'
+            - labels:
+                level:
+                pid:
+                TZ:
+            - timestamp:
+                # format: RFC3339Nano
+                source: timestamp
+                format: 2006-01-02 03:04:05.000
+                location: "Europe/Moscow"
+            - output:
+                source: content

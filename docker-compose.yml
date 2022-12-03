@@ -1,0 +1,29 @@
+version: "3"
+
+networks:
+  loki:
+
+services:
+  loki:
+    image: grafana/loki:2.6.1
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.6.1
+    volumes:
+      - "C:/Users/Nitro/Desktop/docker-compose/Promatail-test/postgres.log:/var/log/postgres.log"
+      - "C:/Users/Nitro/Desktop/docker-compose/Promatail-test/promtailcfg.yml:/etc/promtail/config.yml"
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    networks:
+      - loki
